@@ -39,6 +39,10 @@ private:
     LPFN_LOGON lpLogon;
     LPFN_LOGOFF lpLogoff;
     LPFN_QUERYDATA lpQueryData;
+    LPFN_SENDORDER lpSendOrder;
+    LPFN_CANCELORDER lpCancelOrder;
+    LPFN_GETQUOTE lpGetQuote;
+    LPFN_REPAY lpRepay;
 
     QMutex apiCallMutex; // add lock to all network call
 
@@ -46,14 +50,18 @@ private:
     char* errout;
     char* result;
 
+    bool outputUtf8;
+
     /// end api far call
 
 protected:
-    QString getStrFromGBKBytes(char* data);
+    json convertTableToJSON(const char* result, const char* errout);
 
 public:
     TTS_TradeApi(const QString& dllFilePath);
     ~TTS_TradeApi();
+
+    void setOutputUtf8(bool utf8);
 
     json logon(const char* IP, const short Port,
               const char* Version, short YybID,
@@ -62,6 +70,10 @@ public:
 
     json logoff(int ClientID);
     json queryData(int ClientID, int Category);
+    json sendOrder(int ClientID, int Category ,int PriceType,  char* Gddm,  char* Zqdm , float Price, int Quantity);
+    json cancelOrder(int ClientID, char* ExchangeID, char* hth);
+    json getQuote(int ClientID, char* ExchangeID, char* hth);
+    json repay(int ClientID, char* Amount);
 };
 
 #endif // TTS_TRADEAPI_H

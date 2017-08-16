@@ -3,6 +3,7 @@
 #include <QDebug>
 #include "json.hpp"
 #include "tts_common.h"
+#include <QTextCodec>
 
 using namespace std;
 using json = nlohmann::json;
@@ -10,9 +11,9 @@ using json = nlohmann::json;
 
 TTS_TradeApi::TTS_TradeApi(const QString& dllFilePath)
 {
+    outputUtf8 = false;
     string strDllFilePath = dllFilePath.toStdString();
     hDLL = LoadLibraryA(strDllFilePath.c_str());
-
     if (0 == hDLL) {
         qInfo() << "Load dll failed";
         exit(-1);
@@ -24,6 +25,10 @@ TTS_TradeApi::TTS_TradeApi(const QString& dllFilePath)
     lpLogon = (LPFN_LOGON) GetProcAddress(hDLL, "Logon");
     lpLogoff = (LPFN_LOGOFF) GetProcAddress(hDLL, "Logoff");
     lpQueryData = (LPFN_QUERYDATA) GetProcAddress(hDLL, "QueryData");
+    lpSendOrder = (LPFN_SENDORDER) GetProcAddress(hDLL, "SendOrder");
+    lpCancelOrder = (LPFN_CANCELORDER) GetProcAddress(hDLL, "CancelOrder");
+    lpGetQuote = (LPFN_GETQUOTE) GetProcAddress(hDLL, "GetQuote");
+    lpRepay = (LPFN_REPAY) GetProcAddress(hDLL, "Repay");
     // end load functioins
 
     // initialize tdx
@@ -31,6 +36,8 @@ TTS_TradeApi::TTS_TradeApi(const QString& dllFilePath)
 
     errout = new char[1024];
     result = new char[1024 * 1024];
+    // 这里强制设定本地编码为gbk
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("GB18030"));
 }
 
 TTS_TradeApi::~TTS_TradeApi()
@@ -44,6 +51,23 @@ TTS_TradeApi::~TTS_TradeApi()
     delete[] result;
 }
 
+void TTS_TradeApi::setOutputUtf8(bool utf8) {
+    outputUtf8 = utf8;
+}
+
+/**
+ * @brief TTS_TradeApi::logon 登陆到服务器
+ * @param IP 服务器ip地址
+ * @param Port 端口号
+ * @param Version 客户端版本
+ * @param YybID 营业部id
+ * @param AccountNo 帐号
+ * @param TradeAccount 交易帐号
+ * @param JyPassword 交易密码
+ * @param TxPassword 通讯密码
+ * @return data -> { "client_id" : xxx }
+ *
+ */
 json TTS_TradeApi::logon(const char* IP, const short Port,
                         const char* Version, short YybID,
                         const char* AccountNo, const char* TradeAccount,
@@ -61,6 +85,11 @@ json TTS_TradeApi::logon(const char* IP, const short Port,
     return j;
 }
 
+/**
+ * @brief TTS_TradeApi::logoff 登出
+ * @param ClientID cilent_id
+ * @return success => true/false
+ */
 json TTS_TradeApi::logoff(int ClientID) {
     lpLogoff(ClientID);
     json j;
@@ -68,23 +97,58 @@ json TTS_TradeApi::logoff(int ClientID) {
     return j;
 }
 
+/**
+ * @brief TTS_TradeApi::queryData 查询信息
+ * @param ClientID client_id
+ * @param Category 信息类别
+ * @return [{}, {}, {} ]
+ */
 json TTS_TradeApi::queryData(int ClientID, int Category) {
     lpQueryData(ClientID, Category, result, errout);
+    return convertTableToJSON(result, errout);
+}
 
-    json j;
+
+json TTS_TradeApi::sendOrder(int ClientID, int Category ,int PriceType,  char* Gddm,  char* Zqdm , float Price, int Quantity) {
+    lpSendOrder(ClientID, Category, PriceType, Gddm, Zqdm, Price, Quantity, result, errout);
+    return convertTableToJSON(result, errout);
+}
+
+json TTS_TradeApi::cancelOrder(int ClientID, char *ExchangeID, char *hth) {
+    lpCancelOrder(ClientID, ExchangeID, hth, result, errout);
+    return convertTableToJSON(result, errout);
+}
+
+json TTS_TradeApi::getQuote(int ClientID, char *ExchangeID, char *hth) {
+    lpGetQuote(ClientID, ExchangeID, hth, result, errout);
+    return convertTableToJSON(result, errout);
+}
+
+json TTS_TradeApi::repay(int ClientID, char *Amount) {
+    lpRepay(ClientID, Amount, result, errout);
+    return convertTableToJSON(result, errout);
+}
+
+
+/**
+ * @brief TTS_TradeApi::convertTableToJSON 将\n分割行\t分割字符的类似 csv格式的信息转换为json格式
+ * @param result
+ * @return  json结构的 [{line1}, {line2} ... ] 信息
+ */
+json TTS_TradeApi::convertTableToJSON(const char *result, const char* errout) {
+
+    json resultJSON;
     if (result[0] == 0) {
-        j[TTS_SUCCESS] = false;
-        j[TTS_ERROR] = errout;
-        return j;
+        resultJSON[TTS_SUCCESS] = false;
+        resultJSON[TTS_ERROR] = errout;
+        return resultJSON;
     }
 
-    QString strResult = result;
-    qInfo() << strResult;
+    json j;
+    j = json::array();
+    QString strResult = QString::fromLocal8Bit(result);
+    // qInfo() << strResult;
     QStringList sl = strResult.split("\n");
-
-    j[TTS_SUCCESS] = true;
-    j[TTS_DATA] = json::array();
-
     if (sl.length() > 1) {
         QString head = sl[0];
         QStringList hlist = head.split("\t");
@@ -97,12 +161,24 @@ json TTS_TradeApi::queryData(int ClientID, int Category) {
             QStringList rowlist = row.split("\t");
 
             json oneRecord = json({});
-            for(int i; i < hlist.length(); i++) {
-                oneRecord[hlist[i].toStdString()]= rowlist[i].toStdString();
+            for(int i = 0; i < hlist.length(); i++) {
+                string key, value;
+                if (outputUtf8) {
+                    key = hlist[i].toUtf8();
+                    value = rowlist[i].toUtf8();
+                } else {
+                    key = hlist[i].toLocal8Bit();
+                    value = rowlist[i].toLocal8Bit();
+                }
+
+                oneRecord[key]= value;
             }
-            j[TTS_DATA].push_back(oneRecord);
+            j.push_back(oneRecord);
         }
     }
-
-    return j;
+    resultJSON[TTS_SUCCESS] = true;
+    resultJSON[TTS_DATA] = j;
+    return resultJSON;
 }
+
+
