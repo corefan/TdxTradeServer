@@ -109,22 +109,22 @@ json TTS_TradeApi::queryData(int ClientID, int Category) {
 }
 
 
-json TTS_TradeApi::sendOrder(int ClientID, int Category ,int PriceType,  char* Gddm,  char* Zqdm , float Price, int Quantity) {
+json TTS_TradeApi::sendOrder(int ClientID, int Category ,int PriceType, const char* Gddm,  const char* Zqdm , float Price, int Quantity) {
     lpSendOrder(ClientID, Category, PriceType, Gddm, Zqdm, Price, Quantity, result, errout);
     return convertTableToJSON(result, errout);
 }
 
-json TTS_TradeApi::cancelOrder(int ClientID, char *ExchangeID, char *hth) {
+json TTS_TradeApi::cancelOrder(int ClientID, const char *ExchangeID, const char *hth) {
     lpCancelOrder(ClientID, ExchangeID, hth, result, errout);
     return convertTableToJSON(result, errout);
 }
 
-json TTS_TradeApi::getQuote(int ClientID, char *ExchangeID, char *hth) {
+json TTS_TradeApi::getQuote(int ClientID, const char *ExchangeID, const char *hth) {
     lpGetQuote(ClientID, ExchangeID, hth, result, errout);
     return convertTableToJSON(result, errout);
 }
 
-json TTS_TradeApi::repay(int ClientID, char *Amount) {
+json TTS_TradeApi::repay(int ClientID, const char *Amount) {
     lpRepay(ClientID, Amount, result, errout);
     return convertTableToJSON(result, errout);
 }
@@ -179,6 +179,20 @@ json TTS_TradeApi::convertTableToJSON(const char *result, const char* errout) {
     resultJSON[TTS_SUCCESS] = true;
     resultJSON[TTS_DATA] = j;
     return resultJSON;
+}
+
+
+json TTS_TradeApi::jsonError(QString str) {
+    string value;
+    if (outputUtf8) {
+        value = str.toUtf8();
+    } else {
+        value = str.toLocal8Bit();
+    }
+    json j;
+    j[TTS_SUCCESS] = false;
+    j[TTS_ERROR] = value;
+    return j;
 }
 
 

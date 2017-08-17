@@ -22,10 +22,18 @@ typedef void (__stdcall *LPFN_CLOSETDX)();
 typedef int (__stdcall *LPFN_LOGON)(const char* IP, const short Port, const char* Version, short YybID,  const char* AccountNo, const char* TradeAccount, const char* JyPassword, const char* TxPassword, char* ErrInfo);
 typedef void(__stdcall *LPFN_LOGOFF)(int ClientID);
 typedef void(__stdcall *LPFN_QUERYDATA)(int ClientID, int Category, char* result, char* errInfo);
-typedef void(__stdcall *LPFN_SENDORDER)(int ClientID, int Category ,int PriceType,  char* Gddm,  char* Zqdm , float Price, int Quantity,  char* Result, char* ErrInfo);
-typedef void(__stdcall *LPFN_CANCELORDER)(int ClientID, char* ExchangeID, char* hth, char* Result, char* ErrInfo);
-typedef void(__stdcall *LPFN_GETQUOTE)(int ClientID, char* ExchangeID, char* hth, char* Result, char* ErrInfo);
-typedef void(__stdcall *LPFN_REPAY)(int ClientID, char* Amount, char* Result, char* ErrInfo);
+typedef void(__stdcall *LPFN_SENDORDER)(int ClientID, int Category ,int PriceType,  const char* Gddm,  const char* Zqdm , float Price, int Quantity,  char* Result, char* ErrInfo);
+typedef void(__stdcall *LPFN_CANCELORDER)(int ClientID, const char* ExchangeID, const char* hth, char* Result, char* ErrInfo);
+typedef void(__stdcall *LPFN_GETQUOTE)(int ClientID, const char* ExchangeID, const char* hth, char* Result, char* ErrInfo);
+typedef void(__stdcall *LPFN_REPAY)(int ClientID, const char* Amount, char* Result, char* ErrInfo);
+
+#define P_LOGON         "logon"
+#define P_LOGOFF        "logoff"
+#define P_QUERYDATA     "query_data"
+#define P_SENDORDER     "send_order"
+#define P_CANCELORDER   "cancel_order"
+#define P_GETQUOTE      "get_quote"
+#define P_REPAY         "repay"
 
 class TTS_TradeApi
 {
@@ -70,10 +78,11 @@ public:
 
     json logoff(int ClientID);
     json queryData(int ClientID, int Category);
-    json sendOrder(int ClientID, int Category ,int PriceType,  char* Gddm,  char* Zqdm , float Price, int Quantity);
-    json cancelOrder(int ClientID, char* ExchangeID, char* hth);
-    json getQuote(int ClientID, char* ExchangeID, char* hth);
-    json repay(int ClientID, char* Amount);
+    json sendOrder(int ClientID, int Category ,int PriceType, const char* Gddm, const char* Zqdm , float Price, int Quantity);
+    json cancelOrder(int ClientID, const char* ExchangeID, const char* hth);
+    json getQuote(int ClientID, const char* ExchangeID, const char* hth);
+    json repay(int ClientID, const char* Amount);
+    json jsonError(QString str);
 };
 
 #endif // TTS_TRADEAPI_H
