@@ -12,21 +12,33 @@ TTS_Server::TTS_Server(TTS_SettingObject setting)
 {
     _setting = setting;
     resource = make_shared< Resource >();
+    statusResource = make_shared< Resource >();
     restbed_settings = make_shared< Settings >();
 
 }
 
 void TTS_Server::start() {
+    reqnum = 0;
     auto callback = bind(&TTS_Server::postMethodHandler, this, placeholders::_1);
     tradeApi = make_shared<TTS_TradeApi>(_setting.trade_dll_path);
     resource->set_path("/api");
     resource->set_method_handler("POST", callback);
 
+    statusResource->set_path("/status");
+    statusResource->set_method_handler("GET", [&](const shared_ptr< Session > session){
+        const auto request = session->get_request();
+        json j;
+        j["success"] = true;
+        j["reqnum"] = reqnum;
+        session->close(OK, j.dump());
+    });
+
     restbed_settings->set_port(_setting.port);
     restbed_settings->set_default_header("Connection", "close");
 
     service.publish(resource);
-    qInfo() << "starting to listening.." ;
+    service.publish(statusResource);
+    qInfo() << "Starting to listening.." ;
     service.start(restbed_settings);
 
 }
@@ -57,6 +69,7 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
 
     session->fetch(contentLength, [&] (const shared_ptr<Session> session, const Bytes& body) {
         string requestBody(body.begin(), body.end());
+        reqnum++;
         json requestJson = json::parse(requestBody);
 
         if (requestJson["func"].is_null()) {
@@ -66,7 +79,7 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
         }
 
         string func = requestJson["func"].get<string>();
-
+        qInfo("Receiving request func=%s", func.c_str());
         string responseBody;
         auto params = requestJson["params"];
         // 参数的解析，后续应该用Command等模式将实现放到具体的类中

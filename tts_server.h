@@ -15,8 +15,11 @@ private:
     TTS_SettingObject _setting;
     Service service;
     shared_ptr<Resource> resource;
+    shared_ptr<Resource> statusResource;
     shared_ptr<Settings> restbed_settings;
     shared_ptr<TTS_TradeApi> tradeApi;
+
+    unsigned long reqnum;
 public:
     TTS_Server(TTS_SettingObject setting);
 
