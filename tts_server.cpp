@@ -14,7 +14,8 @@ TTS_Server::TTS_Server(TTS_SettingObject setting)
     resource = make_shared< Resource >();
     statusResource = make_shared< Resource >();
     restbed_settings = make_shared< Settings >();
-
+    ssl_settings = make_shared<SSLSettings>();
+    encryter = make_shared<TTS_Encrypt>(setting);
 }
 
 void TTS_Server::start() {
@@ -33,8 +34,19 @@ void TTS_Server::start() {
         session->close(OK, j.dump());
     });
 
-    restbed_settings->set_port(_setting.port);
+    //restbed_settings->set_bind_address(_setting.bind.toStdString());
     restbed_settings->set_default_header("Connection", "close");
+
+    if (_setting.ssl_enabled) {
+       ssl_settings->set_http_disabled(true);
+       ssl_settings->set_port(_setting.port);
+       ssl_settings->set_certificate(Uri(_setting.ssl_certificate.toStdString()));
+       ssl_settings->set_private_key(Uri(_setting.ssl_private_key.toStdString()));
+       restbed_settings->set_ssl_settings(ssl_settings);
+    } else {
+        restbed_settings->set_port(_setting.port);
+    }
+
 
     service.publish(resource);
     service.publish(statusResource);
@@ -63,6 +75,18 @@ void TTS_Server::stop() {
  *
  * @param session
  */
+void TTS_Server::performResponse(const shared_ptr< Session > session, string output)
+{
+    if (_setting.transport_enc_enabled) {
+        string encoutput = encryter->encryptString(output);
+        string encoutput64 = encryter->toBase64(encoutput);
+        string urlencodedencoutput64 = restbed::Uri::encode(encoutput64);
+        session->close(OK, urlencodedencoutput64);
+    } else {
+        session->close(OK, output);
+    }
+}
+
 void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
     const auto request = session->get_request();
     int contentLength = request->get_header("Content-Length", 0);
@@ -70,11 +94,17 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
     session->fetch(contentLength, [&] (const shared_ptr<Session> session, const Bytes& body) {
         string requestBody(body.begin(), body.end());
         reqnum++;
+
+        if (_setting.transport_enc_enabled) {
+
+        }
+
         json requestJson = json::parse(requestBody);
 
         if (requestJson["func"].is_null()) {
             QString _err= "parameter func does not exists";
-            session->close(OK, tradeApi->jsonError(_err).dump());
+            string _noFunc = tradeApi->jsonError(_err).dump();
+            performResponse(session, _noFunc);
             return;
         }
 
@@ -160,10 +190,12 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
         } else if (func == "stop_server") {
             qInfo() << "Server Stop Command Called!";
             stop();
+        } else if (func == "ping") {
+            responseBody = "{\"success\":true, \"data\": \"pong\"}";
         } else {
             responseBody = "{\"success\":false, \"error\": \"unknown command\"}";
         }
 
-        session->close(OK, responseBody);
+        performResponse(session, responseBody);
     });
 }

@@ -52,13 +52,48 @@ TTS_SettingObject TTS_Setting::loadSettings()
     if (setting == NULL) {
         so.port = DEFAULT_PORT;
         so.trade_dll_path = defaultPath;
+        so.bind = DEFAULT_BIND;
+        so.ssl_enabled = false;
     } else {
         so.port = setting->value("port", DEFAULT_PORT).toInt();
         so.trade_dll_path = setting->value("trade_dll_path", defaultPath).toString();
+        so.bind = setting->value("bind", QString(DEFAULT_BIND)).toString();
+        so.ssl_enabled = setting->value("ssl_enabled").toBool();
+        if (so.ssl_enabled) {
+            so.ssl_certificate = setting->value("ssl_certificate", QString("")).toString();
+            so.ssl_private_key = setting->value("ssl_private_key", QString("")).toString();
+        }
+        so.transport_enc_key = setting->value("transport_enc_key", QString("")).toString();
+        so.transport_enc_iv = setting->value("transport_enc_iv", QString("")).toString();
     }
 
     qInfo() << "Using port : " << so.port;
     qInfo() << "Using dll file : " << so.trade_dll_path;
+    qInfo() << "Bind Address is : " << so.bind;
+    if (so.ssl_enabled) {
+        qInfo() << "SSL connection is endabled";
+        qInfo() << "SSL certificate : " << so.ssl_certificate;
+        qInfo() << "SSL private key : " << so.ssl_private_key;
+    }
+
+    if (!so.transport_enc_key.isEmpty()) {
+        // 检测有效性
+        if (so.transport_enc_key.size() != 16) {
+            qInfo() << "Error: transport_enc_key must be a string with size 16Byte (128bit)";
+            exit(-1);
+        }
+
+        if (so.transport_enc_iv.size() != 16) {
+            qInfo() << "Error: transport_enc_iv must be a string with size 16Bytes (128bit)";
+            exit(-1);
+        }
+
+        so.transport_enc_enabled = true;
+        qInfo() << "Transport Sign Key enabled! ";
+    } else {
+        so.transport_enc_enabled = false;
+        qInfo() << "Transport Sign Key **NOT** enabled! ";
+    }
 
     delete setting;
 
