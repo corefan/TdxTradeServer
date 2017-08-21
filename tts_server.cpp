@@ -96,7 +96,8 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
         reqnum++;
 
         if (_setting.transport_enc_enabled) {
-
+            string requestBodyPlain = encryter->fromBase64(requestBody);
+            requestBody = encryter->decryptString(requestBodyPlain);
         }
 
         json requestJson = json::parse(requestBody);

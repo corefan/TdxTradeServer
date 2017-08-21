@@ -74,3 +74,4 @@ string TTS_Encrypt::fromBase64(const string input)
     string out = qb.data();
     return out;
 }
+
