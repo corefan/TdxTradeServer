@@ -71,3 +71,6 @@ Thumbs.db
 *.dll
 *.exe
 
+package_build_path/
+conanbuildinfo.pri
+conaninfo.txt

@@ -43,4 +43,6 @@ HEADERS += \
 
 DISTFILES += \
     conanfile.txt \
-    README.md
+    README.md \
+    build_debug_version.py \
+    .gitignore
