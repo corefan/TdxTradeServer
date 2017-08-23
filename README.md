@@ -108,3 +108,34 @@ transport_enc_iv=0c78abc083b011e7    ; 可选， aes加密iv
 ```
 注意，后面的加密选项为可选，如果`transport_enc_key` 或者 `transport_enc_iv` 不提供的话，将使用明文和`client api`通讯，请注意和`client api`保持一致。
 如果您跨机器调用接口，建议使用加密功能，并且，请生成随即密钥和iv, 注意，我们这里`key`和`iv`必须是`16`个字节
+
+## 通讯协议
+
+服务器端通过`restbed`实现了一个webserver, 程序会提供 `http://[your_bind]:[your_port]/api` endpoint, 所有的交互都由客户端通过HTTP `POST`到本endpoint 实现。
+
+* 请求的内容(payload)放在Request的Body中
+* 应答的内容(payload)放在Response的Body中
+* 在非加密的情况下，payload 使用json序列化方式传输
+* 在加密情况下，payload　使用 `URLENCODE(BASE64(AES128_CBC(JSON(PAYLOAD))))` 结构加密传输，双方都采用相同方式加密解密
+
+请求的内容结构如下
+```json
+{
+    "func": "one_function",
+    "params": {
+        "param1": p1,
+        "param2": p2
+    }
+}
+```
+
+应答的结构如下
+```json
+{
+    "success":  True,
+    "data": {
+        ....
+    },
+    "error": "some errors only appear when success is False"
+}
+```
