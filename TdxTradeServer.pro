@@ -45,4 +45,5 @@ DISTFILES += \
     conanfile.txt \
     README.md \
     build_debug_version.py \
-    .gitignore
+    .gitignore \
+    ChangeLog.md

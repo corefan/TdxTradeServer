@@ -14,11 +14,26 @@ def p(s):
     print(nowstr + " > " + s)
 
 
+def get_version(bpath):
+    with open(bpath + "\\ChangeLog.md", 'rb') as f:
+        ver = f.readline().split(b" ")[0]
+        build_ver = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        full_ver = ver.decode("utf-8") + "_" + build_ver
+        return full_ver
+
+    return None
+
+
 if __name__ == "__main__":
 
-    archive_name = "TdxTradeServer"
-
     bpath = os.path.dirname(os.path.abspath(__file__))
+
+    ver = get_version(bpath)
+    if ver is None:
+        p("version get error , check ChangeLog.md file's format")
+        raise Exception("Bye!")
+    archive_name = "TdxTradeServer-"  + ver
+    p("building  version: " + archive_name)
 
     package_build_path = os.path.join(bpath, "package_build_path")
     out_path = os.path.join(package_build_path, "out")
@@ -38,7 +53,7 @@ if __name__ == "__main__":
         [shutil.copy(exec_path, files_path)]
         p("make zip file...")
         os.chdir(out_path)
-        shutil.make_archive(archive_name, "zip", root_dir=files_path, base_dir=files_path)
+        shutil.make_archive(archive_name, "zip", root_dir=files_path, base_dir=".")
         p("Done!")
     else:
         p("exe file not found" + exec_path)
