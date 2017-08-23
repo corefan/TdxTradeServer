@@ -123,8 +123,8 @@ transport_enc_iv=0c78abc083b011e7    ; 可选， aes加密iv
 {
     "func": "one_function",
     "params": {
-        "param1": p1,
-        "param2": p2
+        "param1": "p1",
+        "param2": "p2"
     }
 }
 ```
@@ -132,7 +132,7 @@ transport_enc_iv=0c78abc083b011e7    ; 可选， aes加密iv
 应答的结构如下
 ```json
 {
-    "success":  True,
+    "success": true,
     "data": {
         ....
     },
