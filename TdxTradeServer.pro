@@ -42,4 +42,5 @@ HEADERS += \
     aes.h
 
 DISTFILES += \
-    conanfile.txt
+    conanfile.txt \
+    README.md
