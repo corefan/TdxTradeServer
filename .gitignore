@@ -74,3 +74,5 @@ Thumbs.db
 package_build_path/
 conanbuildinfo.pri
 conaninfo.txt
+
+!debug_version_dependencies/*.dll
