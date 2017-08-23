@@ -24,7 +24,7 @@ typedef void(__stdcall *LPFN_LOGOFF)(int ClientID);
 typedef void(__stdcall *LPFN_QUERYDATA)(int ClientID, int Category, char* result, char* errInfo);
 typedef void(__stdcall *LPFN_SENDORDER)(int ClientID, int Category ,int PriceType,  const char* Gddm,  const char* Zqdm , float Price, int Quantity,  char* Result, char* ErrInfo);
 typedef void(__stdcall *LPFN_CANCELORDER)(int ClientID, const char* ExchangeID, const char* hth, char* Result, char* ErrInfo);
-typedef void(__stdcall *LPFN_GETQUOTE)(int ClientID, const char* ExchangeID, const char* hth, char* Result, char* ErrInfo);
+typedef void(__stdcall *LPFN_GETQUOTE)(int ClientID, const char* Zqdm, char* Result, char* ErrInfo);
 typedef void(__stdcall *LPFN_REPAY)(int ClientID, const char* Amount, char* Result, char* ErrInfo);
 
 #define P_LOGON         "logon"
@@ -62,6 +62,8 @@ private:
 
     /// end api far call
 
+    void setupErrForJson(const char* errout, json& resultJSON);
+
 protected:
     json convertTableToJSON(const char* result, const char* errout);
 
@@ -80,7 +82,7 @@ public:
     json queryData(int ClientID, int Category);
     json sendOrder(int ClientID, int Category ,int PriceType, const char* Gddm, const char* Zqdm , float Price, int Quantity);
     json cancelOrder(int ClientID, const char* ExchangeID, const char* hth);
-    json getQuote(int ClientID, const char* ExchangeID, const char* hth);
+    json getQuote(int ClientID, const char* Zqdm);
     json repay(int ClientID, const char* Amount);
     json jsonError(QString str);
 };

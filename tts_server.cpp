@@ -96,7 +96,8 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
         reqnum++;
 
         if (_setting.transport_enc_enabled) {
-            string requestBodyPlain = encryter->fromBase64(requestBody);
+            string requestBodyUnquote =  restbed::Uri::decode(requestBody);
+            string requestBodyPlain = encryter->fromBase64(requestBodyUnquote);
             requestBody = encryter->decryptString(requestBodyPlain);
         }
 
@@ -141,9 +142,11 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
             }
         } else if (func == P_QUERYDATA) {
             if (params["client_id"].is_number()
-                    && params["category"]
+                    && params["category"].is_number()
                     ) {
-                responseBody = tradeApi->queryData(params["client_id"].get<int>(), params["category"].get<int>());
+                int clientId = params["client_id"].get<int>();
+                int category = params["category"].get<int>();
+                responseBody = tradeApi->queryData(clientId, category).dump();
             } else {
                 responseBody = tradeApi->jsonError("error params").dump();
             }
@@ -167,17 +170,24 @@ void TTS_Server::postMethodHandler(const shared_ptr< Session > session) {
             } else {
                 responseBody = tradeApi->jsonError("error params").dump();
             }
-        } else if (func == P_GETQUOTE || func == P_CANCELORDER)
-            /** 刚刚好这两个func的参数一致的 **/
+        } else if (func == P_CANCELORDER)
         {
             if (params["client_id"].is_number()
                     && params["exchange_id"].is_string()
                     && params["hth"].is_string()) {
-                responseBody = tradeApi->getQuote(
+                responseBody = tradeApi->cancelOrder(
                             params["client_id"].get<int>(),
                         params["exchange_id"].get<string>().c_str(),
                         params["hth"].get<string>().c_str()
                             ).dump();
+            } else {
+                responseBody = tradeApi->jsonError("error params").dump();
+            }
+        } else if (func == P_GETQUOTE) {
+            if (params["client_id"].is_number()
+                    && params["code"].is_string()){
+                responseBody = tradeApi->getQuote(params["client_id"].get<int>(),
+                        params["code"].get<string>().c_str()).dump();
             } else {
                 responseBody = tradeApi->jsonError("error params").dump();
             }

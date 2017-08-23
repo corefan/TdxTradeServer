@@ -11,7 +11,7 @@ using json = nlohmann::json;
 
 TTS_TradeApi::TTS_TradeApi(const QString& dllFilePath)
 {
-    outputUtf8 = false;
+    outputUtf8 = true;
     string strDllFilePath = dllFilePath.toStdString();
     hDLL = LoadLibraryA(strDllFilePath.c_str());
     if (0 == hDLL) {
@@ -76,7 +76,7 @@ json TTS_TradeApi::logon(const char* IP, const short Port,
     int ret = lpLogon(IP, Port, Version, YybID, AccountNo, TradeAccount, JyPassword, TxPassword, errout);
     if (ret == -1) {
         j[TTS_SUCCESS] = false;
-        j[TTS_ERROR] = errout;
+        setupErrForJson(errout, j);
         return j;
     } else {
         j[TTS_SUCCESS] = true;
@@ -119,8 +119,8 @@ json TTS_TradeApi::cancelOrder(int ClientID, const char *ExchangeID, const char 
     return convertTableToJSON(result, errout);
 }
 
-json TTS_TradeApi::getQuote(int ClientID, const char *ExchangeID, const char *hth) {
-    lpGetQuote(ClientID, ExchangeID, hth, result, errout);
+json TTS_TradeApi::getQuote(int ClientID, const char *Zqdm) {
+    lpGetQuote(ClientID, Zqdm, result, errout);
     return convertTableToJSON(result, errout);
 }
 
@@ -130,17 +130,30 @@ json TTS_TradeApi::repay(int ClientID, const char *Amount) {
 }
 
 
+void TTS_TradeApi::setupErrForJson(const char* errout, json& resultJSON)
+{
+    if (outputUtf8) {
+        QString qErrout = QString::fromLocal8Bit(errout);
+        string utf8Errout = qErrout.toUtf8().constData();
+        resultJSON[TTS_ERROR] = utf8Errout;
+    } else {
+        resultJSON[TTS_ERROR] = errout;
+    }
+}
+
+
 /**
  * @brief TTS_TradeApi::convertTableToJSON 将\n分割行\t分割字符的类似 csv格式的信息转换为json格式
  * @param result
  * @return  json结构的 [{line1}, {line2} ... ] 信息
  */
+
 json TTS_TradeApi::convertTableToJSON(const char *result, const char* errout) {
 
     json resultJSON;
     if (result[0] == 0) {
         resultJSON[TTS_SUCCESS] = false;
-        resultJSON[TTS_ERROR] = errout;
+        setupErrForJson(errout, resultJSON);
         return resultJSON;
     }
 

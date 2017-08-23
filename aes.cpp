@@ -371,7 +371,7 @@ int AESModeOfOperation::Encrypt(unsigned char *_in, int _length, unsigned char *
     unsigned char input[16] = {0};
     unsigned char output[16] = {0};
     unsigned char ciphertext[16] = {0};
-    unsigned char cipherout[256] = {0};
+    unsigned char* cipherout = new unsigned char[_length+16];
     unsigned char plaintext[16] = {0};
     int co_index = 0;
     // 1. get rounds
@@ -448,6 +448,7 @@ int AESModeOfOperation::Encrypt(unsigned char *_in, int _length, unsigned char *
         }
     }
     memcpy(_out, cipherout, co_index);
+    delete[] cipherout;
     return co_index;
 }
 
@@ -459,7 +460,7 @@ int AESModeOfOperation::Decrypt(unsigned char *_in, int _length, unsigned char *
     unsigned char input[16] = {0};
     unsigned char output[16] = {0};
     unsigned char plaintext[16] = {0};
-    unsigned char plainout[256] = {0};
+    unsigned char* plainout = new unsigned char[_length + 16];
     int po_index = 0 ;
     if (_length % 16 == 0) {
         rounds = _length / 16;
@@ -535,6 +536,7 @@ int AESModeOfOperation::Decrypt(unsigned char *_in, int _length, unsigned char *
         }
     }
     memcpy(_out, plainout, po_index);
+    delete[] plainout;
     return po_index;
 }
 

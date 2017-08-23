@@ -41,6 +41,7 @@ string TTS_Encrypt::encryptString(const string plaintext)
     }
 
     unsigned char* encryptedData = new unsigned char[encryptedDataSize];
+    memset(encryptedData, 0, encryptedDataSize);
     int len = moo.Encrypt((unsigned char*) paddedtext.data(), paddedSize, encryptedData);
     string estr;
     estr.assign((char*)encryptedData, len);
@@ -63,7 +64,7 @@ string TTS_Encrypt::toBase64(const string input)
 {
     QByteArray qb = QByteArray::fromStdString(input);
     QByteArray qb64 = qb.toBase64();
-    string out = qb64.data();
+    string out(qb64.data(), qb64.size());
     return out;
 }
 
@@ -71,7 +72,7 @@ string TTS_Encrypt::fromBase64(const string input)
 {
     QByteArray qb64 = QByteArray::fromStdString(input);
     QByteArray qb = qb64.fromBase64(qb64);
-    string out = qb.data();
+    string out(qb.data(), qb.size());
     return out;
 }
 
